@@ -1,7 +1,6 @@
 import { ROUTES_PATH } from '../constants/routes.js'
 import { formatDate, formatStatus } from "../app/format.js"
 import Logout from "./Logout.js"
-
 export default class {
   constructor({ document, onNavigate, store, localStorage }) {
     this.document = document
@@ -28,6 +27,7 @@ export default class {
   }
 
   // not need to cover this function by tests
+  // istanbul ignore next
   getBills = () => {
     if (this.store) {
       return this.store
@@ -38,8 +38,7 @@ export default class {
           .map(doc => {
             try {
               return {
-                ...doc,
-                // date: formatDate(doc.date),
+                ...doc,              
                 status: formatStatus(doc.status)
               }
             } catch(e) {
