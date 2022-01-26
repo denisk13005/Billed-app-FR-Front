@@ -5,9 +5,11 @@ import '@testing-library/jest-dom'
 import { screen,fireEvent, getByTestId} from "@testing-library/dom"
 import NewBillUI from "../views/NewBillUI.js"
 import NewBill from "../containers/NewBill.js"
+import BillsUI  from '../views/BillsUI.js'
 import {localStorageMock } from '../__mocks__/localStorage.js'
 import { ROUTES ,ROUTES_PATH} from '../constants/routes.js'
 import Router from "../app/Router.js"
+import store from "../__mocks__/store.js"
 
 describe("Given I am connected as an employee", () => {
   describe("When I am on NewBill Page", () => {
@@ -70,5 +72,87 @@ describe("Given I am connected as an employee", () => {
 
     })
 
+  })
+})
+describe("When I select a file", () => {
+  test("Then it should be changed in the input", () => {
+    Object.defineProperty(window, 'localStorage', { value: localStorageMock })// Set localStorage
+    window.localStorage.setItem('user', JSON.stringify({type: 'Employee'}))// Set user as Employee in localStorage
+    const html = NewBillUI()
+    document.body.innerHTML = html
+    const newBill = new NewBill({
+      document,
+      onNavigate: (pathname) => document.body.innerHTML = ROUTES({ pathname }),
+      firestore: null,
+      localStorage: window.localStorage,
+      validFormat : true
+    })     
+
+    
+    const handleChangeFile = jest.fn(newBill.handleChangeFile)
+    const inputFile = screen.getByTestId("file")
+    inputFile.addEventListener('change', handleChangeFile)
+    fireEvent.change(inputFile, {
+      target: {
+        files: [new File(["test.jpeg"], "test.jpeg", { type: "image/jpeg" })]
+      }
+    })
+    expect(handleChangeFile).toHaveBeenCalled();
+    expect(inputFile.files[0].name).toBe("test.jpeg");
+  })
+})
+// test d'intégration POST
+describe("Given I am a user connected as Admin", () => {
+  describe("When I navigate to Dashboard", () => {
+    test("fetches bills from mock API POST", async () => {
+      const html = NewBillUI()
+      document.body.innerHTML = html  
+      const onNavigate = (pathname) => {
+        document.body.innerHTML = ROUTES({ pathname })
+      }      
+     const testBill = 
+      {
+        "id": "qcCK3SzECmaZAGRrHjaC",
+        "status": "refused",
+        "pct": 20,
+        "amount": 200,
+        "email": "a@a",
+        "name": "test2",
+        "vat": "40",
+        "fileName": "preview-facture-free-201801-pdf-1.jpg",
+        "date": "2002-02-02",
+        "commentAdmin": "pas la bonne facture",
+        "commentary": "test2",
+        "type": "Restaurants et bars",
+        "fileUrl": "https://test.storage.tld/v0/b/billable-677b6.a…f-1.jpg?alt=media&token=4df6ed2c-12c8-42a2-b013-346c1346f732"
+      }      
+      
+       const getSpy = jest.spyOn(store, "post") // fonction simulée qui surveille l'appel de la méthode get de l'objet store       
+       const bills = await store.post(testBill) 
+       expect(getSpy).toHaveBeenCalledTimes(1)
+       expect(bills.status).toBe(200)
+       expect(bills.data.status).toBe("refused")
+       expect(bills.data.id).toBe("qcCK3SzECmaZAGRrHjaC")
+      
+
+    })
+    test("fetches bills from an API and fails with 404 message error", async () => {
+      store.post.mockImplementationOnce(() => // simule un rejet de la promesse
+        Promise.reject(new Error("Erreur 404"))
+      )
+      const html = BillsUI({ error: "Erreur 404" })
+      document.body.innerHTML = html
+      const message = await screen.getByText(/Erreur 404/)
+      expect(message).toBeTruthy()
+    })
+    test("fetches messages from an API and fails with 500 message error", async () => {
+      store.post.mockImplementationOnce(() =>
+        Promise.reject(new Error("Erreur 500"))
+      )
+      const html = BillsUI({ error: "Erreur 500" })
+      document.body.innerHTML = html
+      const message = await screen.getByText(/Erreur 500/)
+      expect(message).toBeTruthy()
+    })
   })
 })
