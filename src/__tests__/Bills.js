@@ -78,6 +78,7 @@ describe('Given i am on bills page',()=>{
     test('Should called the handleClickIconEye when i click on iconEye',()=>{    
       const html = BillsUI({ data: bills })
       document.body.innerHTML = html
+      let pathname =  ROUTES_PATH['Bills']
       const bill= new Bills({
         document,
         onNavigate: (pathname) => document.body.innerHTML = ROUTES({ pathname })
@@ -108,6 +109,7 @@ describe("Given I am a user connected as Employee", () => {
     test("fetches bills from an API and fails with 404 message error", async () => {
       store.get.mockImplementationOnce(() => // simule un rejet de la promesse
         Promise.reject(new Error("Erreur 404"))
+        
       )
       const html = BillsUI({ error: "Erreur 404" })
       document.body.innerHTML = html
